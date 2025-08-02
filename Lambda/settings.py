@@ -5,19 +5,22 @@ Django settings for Lambda project.
 from pathlib import Path
 import os
 import dj_database_url
+from decouple import config  # to read from .env
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'SECRET_KEY',
-    'django-insecure-rtx5()v31c9^l*9z=#+9d2739&eq(59*-jmj5ygg^vlu5-1=cz'
-)
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['.up.railway.app', 'localhost', '127.0.0.1']
+
+# To avoid CSRF verification errors in production
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.up.railway.app'
+]
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,7 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files on Heroku
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # For serving static files
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,7 +66,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Lambda.wsgi.application'
 
-# Database (default: SQLite, override with Postgres on Heroku)
+# Database (default: SQLite, override with Postgres on Railway)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -71,9 +74,13 @@ DATABASES = {
     }
 }
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = config('DATABASE_URL', default=None)
 if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+    DATABASES['default'] = dj_database_url.config(
+        default=DATABASE_URL,
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
